@@ -1,5 +1,3 @@
-
-// admin.js - admin interface
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
@@ -58,7 +56,7 @@ async function ensureMonthDocAll(){
     if(!snap.exists()){
       const lastDay = new Date(it.year, it.month+1, 0).getDate();
       const payload = {};
-      for(let d=1;d<=lastDay;d++) payload[d] = { 'صباحي': false, 'مسائي': false, 'مبيت': false };
+      for(let d=1;d<=lastDay;d++) payload[d] = { 'صباحي': false, 'مسائي': false };
       await setDoc(ref, payload);
     }
   }
@@ -77,11 +75,10 @@ async function renderMonth(index){
     const dayName = weekDays[new Date(year, month, d).getDay()];
     dateLine.innerText = `${dayName} ${d} - ${monthNames[month]}`;
     dayDiv.appendChild(dateLine);
-    ['صباحي','مسائي','مبيت'].forEach(slot=>{
+    ['صباحي','مسائي'].forEach(slot=>{
       const slotDiv = document.createElement('div');
       slotDiv.className='slot available'; slotDiv.dataset.day=d; slotDiv.dataset.slot=slot; slotDiv.innerText=slot;
       slotDiv.onclick = async ()=>{
-        // toggle
         const id = monthDocId(year, month);
         const ref = doc(db, 'bookings', id);
         const snap = await getDoc(ref);
@@ -99,7 +96,6 @@ async function renderMonth(index){
   if(unsubscribe) unsubscribe();
   const ref = doc(db, 'bookings', monthDocId(year, month));
   unsubscribe = onSnapshot(ref, (snap)=>{
-    // reset
     document.querySelectorAll('#calendarA .slot').forEach(el=>{ el.classList.remove('booked'); el.classList.add('available'); });
     if(!snap.exists()) return;
     const data = snap.data();
@@ -126,4 +122,3 @@ yearSelect.onchange = ()=>{ monthSelect.onchange(); };
   populateSelectors(months[currentIndex].month, months[currentIndex].year);
   renderMonth(currentIndex);
 })();
-
