@@ -1,5 +1,3 @@
-
-// script.js - public visitor page
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import { getFirestore, doc, getDoc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
@@ -14,18 +12,16 @@ const weekDays = ['أحد','اثنين','ثلاثاء','أربعاء','خميس'
 const START_YEAR = 2025;
 const END_YEAR = 2030;
 
-let months = []; // array of {year, monthIndex}
+let months = [];
 for(let y=START_YEAR;y<=END_YEAR;y++){
   for(let m=0;m<12;m++){
     months.push({year:y, month:m});
   }
 }
 
-// find current month index in months array
 const now = new Date();
 let currentIndex = months.findIndex(x=> x.year===now.getFullYear() && x.month===now.getMonth());
 if(currentIndex===-1){
-  // if current date outside range, default to first month
   currentIndex = 0;
 }
 
@@ -38,7 +34,6 @@ const calendarDiv = document.getElementById('calendar');
 function populateSelectors(selMonth, selYear){
   monthSelect.innerHTML = '';
   yearSelect.innerHTML = '';
-  // months list for current selected year
   const years = Array.from(new Set(months.map(m=>m.year)));
   years.forEach(y=>{
     const opt = document.createElement('option');
@@ -57,7 +52,6 @@ function populateSelectors(selMonth, selYear){
 function monthDocId(year, month){ const mm = String(month+1).padStart(2,'0'); return `${year}-${mm}`; }
 
 async function ensureMonthDocAll(){
-  // ensure doc exists only for current month (or currently displayed month)
   const idx = currentIndex;
   if(idx < 0 || idx >= months.length) return;
   const it = months[idx];
@@ -68,7 +62,7 @@ async function ensureMonthDocAll(){
     const lastDay = new Date(it.year, it.month+1, 0).getDate();
     const payload = {};
     for(let d=1; d<=lastDay; d++){
-      payload[d] = { 'صباحي': false, 'مسائي': false, 'مبيت': false };
+      payload[d] = { 'صباحي': false, 'مسائي': false };
     }
     await setDoc(ref, payload);
   }
@@ -79,8 +73,6 @@ async function renderMonth(index){
   monthSelect.value = month;
   yearSelect.value = year;
   calendarDiv.innerHTML = '';
-  // header 7 days labels
-  // create all days for that month
   const lastDay = new Date(year, month+1, 0).getDate();
   for(let d=1; d<=lastDay; d++){
     const dayDiv = document.createElement('div');
@@ -90,7 +82,7 @@ async function renderMonth(index){
     const dayName = weekDays[new Date(year, month, d).getDay()];
     dateLine.innerText = `${dayName} ${d} - ${monthNames[month]}`;
     dayDiv.appendChild(dateLine);
-    ['صباحي','مسائي','مبيت'].forEach(slot=>{
+    ['صباحي','مسائي'].forEach(slot=>{
       const slotDiv = document.createElement('div');
       slotDiv.className = 'slot available';
       slotDiv.dataset.day = d;
@@ -100,12 +92,10 @@ async function renderMonth(index){
     });
     calendarDiv.appendChild(dayDiv);
   }
-  // realtime update for this month
   const ref = doc(db, 'bookings', monthDocId(year, month));
   onSnapshot(ref, (snap)=>{
     if(!snap.exists()) return;
     const data = snap.data();
-    // reset all
     document.querySelectorAll('#calendar .slot').forEach(el=>{ el.classList.remove('booked'); el.classList.add('available'); });
     for(const [day, slots] of Object.entries(data || {})){
       for(const [sname, val] of Object.entries(slots || {})){
@@ -125,12 +115,8 @@ nextBtn.onclick = ()=>{ if(currentIndex<months.length-1){ currentIndex++; render
 monthSelect.onchange = ()=>{ const m = parseInt(monthSelect.value,10); const y = parseInt(yearSelect.value,10); const idx = months.findIndex(x=>x.year===y && x.month===m); if(idx!==-1){ currentIndex = idx; renderMonth(currentIndex); } };
 yearSelect.onchange = ()=>{ monthSelect.onchange(); };
 
-// initialize
 (async ()=>{
-  // render UI first for snappy load
   populateSelectors(months[currentIndex].month, months[currentIndex].year);
   renderMonth(currentIndex);
-  // ensure firestore doc exists for current month without blocking UI
   ensureMonthDocAll();
 })();
-
